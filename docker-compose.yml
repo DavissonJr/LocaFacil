@@ -44,6 +44,7 @@ services:
       minio:
         condition: service_healthy
     environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
       ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=LocacaoVeiculosDB;User Id=sa;Password=SenhaForte@2026;TrustServerCertificate=True;"
       Minio__Endpoint: "minio:9000"
       Minio__PublicEndpoint: "localhost:9000"

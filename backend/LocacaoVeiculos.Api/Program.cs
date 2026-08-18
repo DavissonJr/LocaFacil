@@ -46,10 +46,9 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
-        policy.WithOrigins(
-                builder.Configuration["Cors:AllowedOrigin"] ?? "http://localhost:4200")
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
     });
 });
 
@@ -85,10 +84,35 @@ using (var scope = app.Services.CreateScope())
 }
 
 // ---------- Pipeline ----------
+// CORS precisa ser o PRIMEIRO middleware: se uma exceção não tratada acontecer
+// mais adiante e não houver handler de exceção, a conexão pode ser resetada
+// antes do header de CORS ser anexado - o navegador então reporta isso como
+// erro de CORS, mesmo o problema real sendo outro (por isso também adicionamos
+// um exception handler abaixo, que garante uma resposta de verdade sempre).
+app.UseCors("Frontend");
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+else
+{
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "application/json";
+            var feature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+            // Em produção "de verdade" troque isso por só logar o erro (sem expor "detalhe" ao cliente).
+            await context.Response.WriteAsJsonAsync(new { erro = "Ocorreu um erro interno.", detalhe = feature?.Error.Message });
+        });
+    });
+}
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 

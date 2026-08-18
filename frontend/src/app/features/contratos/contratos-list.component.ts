@@ -18,7 +18,10 @@ import { Cliente } from '../../core/models/cliente.model';
         <h2>Contratos de locação</h2>
         <p class="subtitle">{{ contratos.length }} contrato(s)</p>
       </div>
-      <button class="btn btn-primary" (click)="abrirNovo()">+ Nova locação</button>
+      <button class="btn btn-primary" (click)="abrirNovo()">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        Nova locação
+      </button>
     </div>
 
     <div class="filters">
@@ -42,14 +45,22 @@ import { Cliente } from '../../core/models/cliente.model';
             <td><span class="badge" [ngClass]="statusClass(c.status)">{{ c.status }}</span></td>
             <td class="actions">
               <button class="btn btn-secondary" *ngIf="c.status === 'Ativo'" (click)="abrirFinalizar(c)">Finalizar</button>
-              <button class="btn btn-danger" *ngIf="c.status === 'Ativo'" (click)="cancelar(c)">Cancelar</button>
+              <button class="btn btn-danger icon-only" *ngIf="c.status === 'Ativo'" (click)="cancelar(c)" title="Cancelar">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
     <ng-template #vazio>
-      <div class="empty-state card">Nenhum contrato encontrado.</div>
+      <div class="empty-state card">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M7 4h10a1 1 0 0 1 1 1v15l-3-2-3 2-3-2-3 2V5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        </div>
+        <strong>Nenhum contrato encontrado</strong>
+        <p>Crie uma nova locação clicando no botão acima.</p>
+      </div>
     </ng-template>
 
     <!-- Modal nova locação -->
@@ -110,24 +121,22 @@ import { Cliente } from '../../core/models/cliente.model';
     </div>
   `,
   styles: [`
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-    h2 { font-size: 22px; font-weight: 700; }
-    .subtitle { color: var(--color-text-muted); font-size: 13px; margin-top: 4px; }
-    .filters { display: flex; gap: 8px; margin: 20px 0; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+    .subtitle { color: var(--color-text-muted); font-size: 14px; margin-top: 4px; }
+    .filters { display: flex; gap: 8px; margin: 20px 0 22px; }
     .muted { color: var(--color-text-muted); font-size: 12px; }
-    .actions { display: flex; gap: 8px; }
-    .actions .btn { padding: 6px 10px; font-size: 12px; }
+    .actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .actions .btn { padding: 8px 14px; font-size: 13px; }
+    .icon-only { padding: 8px; }
+    .icon-only svg { width: 14px; height: 14px; }
 
-    .modal-backdrop {
-      position: fixed; inset: 0; background: rgba(15,23,42,0.4);
-      display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px;
-    }
-    .modal { width: 100%; max-width: 520px; padding: 28px; max-height: 90vh; overflow-y: auto; }
+    .modal { max-width: 540px; padding: 30px; max-height: 90vh; overflow-y: auto; }
     .modal.small { max-width: 400px; }
-    .modal h3 { font-size: 18px; margin-bottom: 8px; }
+    .modal h3 { font-size: 19px; font-weight: 800; margin-bottom: 8px; }
     .modal .muted { margin-bottom: 20px; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
   `]
 })
 export class ContratosListComponent implements OnInit {

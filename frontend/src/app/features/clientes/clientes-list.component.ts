@@ -19,10 +19,14 @@ const CLIENTE_VAZIO: ClienteRequest = {
         <h2>Clientes</h2>
         <p class="subtitle">{{ clientes.length }} cliente(s) cadastrado(s)</p>
       </div>
-      <button class="btn btn-primary" (click)="abrirNovo()">+ Novo cliente</button>
+      <button class="btn btn-primary" (click)="abrirNovo()">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        Novo cliente
+      </button>
     </div>
 
     <div class="search">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       <input placeholder="Buscar por nome ou documento..." [(ngModel)]="busca" (ngModelChange)="buscar()" />
     </div>
 
@@ -38,15 +42,25 @@ const CLIENTE_VAZIO: ClienteRequest = {
             <td>{{ c.telefone || '—' }}<br /><span class="muted">{{ c.email || '' }}</span></td>
             <td>{{ c.cnh || '—' }}</td>
             <td class="actions">
-              <button class="btn btn-secondary" (click)="abrirEditar(c)">Editar</button>
-              <button class="btn btn-danger" (click)="remover(c)">Excluir</button>
+              <button class="btn btn-secondary" (click)="abrirEditar(c)" title="Editar">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+              </button>
+              <button class="btn btn-danger" (click)="remover(c)" title="Excluir">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-.8 12.1a2 2 0 0 1-2 1.9H8.8a2 2 0 0 1-2-1.9L6 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
     <ng-template #vazio>
-      <div class="empty-state card">Nenhum cliente encontrado.</div>
+      <div class="empty-state card">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="1.6"/><path d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <strong>Nenhum cliente encontrado</strong>
+        <p>Cadastre o primeiro clicando em "Novo cliente".</p>
+      </div>
     </ng-template>
 
     <div class="modal-backdrop" *ngIf="modalAberto" (click)="fecharModal()">
@@ -84,23 +98,22 @@ const CLIENTE_VAZIO: ClienteRequest = {
     </div>
   `,
   styles: [`
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
-    h2 { font-size: 22px; font-weight: 700; }
-    .subtitle { color: var(--color-text-muted); font-size: 13px; margin-top: 4px; }
-    .search { margin-bottom: 20px; }
-    .search input { width: 100%; max-width: 360px; padding: 10px 14px; border: 1px solid var(--color-border); border-radius: 8px; font-size: 14px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+    h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+    .subtitle { color: var(--color-text-muted); font-size: 14px; margin-top: 4px; }
+    .search { position: relative; margin-bottom: 22px; max-width: 360px; }
+    .search svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--color-text-muted); }
+    .search input { width: 100%; padding: 11px 14px 11px 38px; border: 1.5px solid var(--color-border); border-radius: var(--radius-sm); font-size: 14px; background: white; transition: all 0.15s; }
+    .search input:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 4px var(--color-primary-light); }
     .muted { color: var(--color-text-muted); font-size: 12px; }
     .actions { display: flex; gap: 8px; }
-    .actions .btn { padding: 6px 10px; font-size: 12px; }
+    .actions .btn { padding: 8px; }
+    .actions .btn svg { width: 15px; height: 15px; }
 
-    .modal-backdrop {
-      position: fixed; inset: 0; background: rgba(15,23,42,0.4);
-      display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px;
-    }
-    .modal { width: 100%; max-width: 520px; padding: 28px; max-height: 90vh; overflow-y: auto; }
-    .modal h3 { font-size: 18px; margin-bottom: 20px; }
+    .modal { max-width: 540px; padding: 30px; max-height: 90vh; overflow-y: auto; }
+    .modal h3 { font-size: 19px; font-weight: 800; margin-bottom: 22px; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
   `]
 })
 export class ClientesListComponent implements OnInit {
