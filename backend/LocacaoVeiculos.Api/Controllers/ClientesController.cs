@@ -52,13 +52,19 @@ public class ClientesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ClienteResponse>> Criar(ClienteRequest req)
     {
+        var erro = ValidarCliente(req);
+        if (erro is not null) return BadRequest(new { erro });
+
+        if (await _db.Clientes.AnyAsync(c => c.Documento == LimparDocumento(req.Documento)))
+            return Conflict(new { erro = "Já existe um cliente cadastrado com esse documento." });
+
         var cliente = new Cliente
         {
             EmpresaId = EmpresaId,
-            Nome = req.Nome,
+            Nome = req.Nome.Trim(),
             DocumentoTipo = req.DocumentoTipo,
-            Documento = req.Documento,
-            Email = req.Email,
+            Documento = LimparDocumento(req.Documento),
+            Email = string.IsNullOrWhiteSpace(req.Email) ? null : req.Email.Trim(),
             Telefone = req.Telefone,
             Endereco = req.Endereco,
             CNH = req.CNH,
@@ -76,10 +82,17 @@ public class ClientesController : ControllerBase
         var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == id);
         if (cliente is null) return NotFound();
 
-        cliente.Nome = req.Nome;
+        var erro = ValidarCliente(req);
+        if (erro is not null) return BadRequest(new { erro });
+
+        var documentoLimpo = LimparDocumento(req.Documento);
+        if (await _db.Clientes.AnyAsync(c => c.Documento == documentoLimpo && c.Id != id))
+            return Conflict(new { erro = "Já existe outro cliente cadastrado com esse documento." });
+
+        cliente.Nome = req.Nome.Trim();
         cliente.DocumentoTipo = req.DocumentoTipo;
-        cliente.Documento = req.Documento;
-        cliente.Email = req.Email;
+        cliente.Documento = documentoLimpo;
+        cliente.Email = string.IsNullOrWhiteSpace(req.Email) ? null : req.Email.Trim();
         cliente.Telefone = req.Telefone;
         cliente.Endereco = req.Endereco;
         cliente.CNH = req.CNH;
@@ -87,6 +100,28 @@ public class ClientesController : ControllerBase
 
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    private static string LimparDocumento(string documento) => System.Text.RegularExpressions.Regex.Replace(documento, @"[^\d]", "");
+
+    private static string? ValidarCliente(ClienteRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.Nome))
+            return "Informe o nome do cliente.";
+
+        if (req.DocumentoTipo != "CPF" && req.DocumentoTipo != "CNPJ")
+            return "Tipo de documento inválido.";
+
+        if (!Validadores.DocumentoValido(req.DocumentoTipo, req.Documento))
+            return req.DocumentoTipo == "CPF" ? "CPF inválido. Confira os números digitados." : "CNPJ inválido. Confira os números digitados.";
+
+        if (!string.IsNullOrWhiteSpace(req.Email) && !Validadores.EmailValido(req.Email))
+            return "E-mail inválido.";
+
+        if (req.ValidadeCNH.HasValue && req.ValidadeCNH.Value.Date < DateTime.UtcNow.Date && !string.IsNullOrWhiteSpace(req.CNH))
+            return "A validade da CNH informada já está vencida - confira a data.";
+
+        return null;
     }
 
     [HttpDelete("{id:guid}")]
@@ -109,10 +144,10 @@ public class ClientesController : ControllerBase
         if (cliente is null) return NotFound();
 
         if (arquivo is null || arquivo.Length == 0)
-            return BadRequest("Nenhum arquivo enviado.");
+            return BadRequest(new { erro = "Nenhum arquivo enviado." });
 
         if (!TiposImagemPermitidos.Contains(arquivo.ContentType))
-            return BadRequest("Formato de imagem não suportado. Use JPEG, PNG ou WEBP.");
+            return BadRequest(new { erro = "Formato de imagem não suportado. Use JPEG, PNG ou WEBP." });
 
         var objectNameAntigo = cliente.DocumentoImagemObjectName;
 

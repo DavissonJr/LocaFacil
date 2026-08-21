@@ -202,7 +202,7 @@ export class ContratosListComponent implements OnInit {
       },
       error: (err) => {
         this.salvando = false;
-        this.erro = err.error || 'Não foi possível criar a locação.';
+        this.erro = err.error?.erro ?? 'Não foi possível criar a locação.';
       }
     });
   }
@@ -226,7 +226,7 @@ export class ContratosListComponent implements OnInit {
       },
       error: (err) => {
         this.salvando = false;
-        this.erro = err.error || 'Não foi possível finalizar a locação.';
+        this.erro = err.error?.erro ?? 'Não foi possível finalizar a locação.';
       }
     });
   }

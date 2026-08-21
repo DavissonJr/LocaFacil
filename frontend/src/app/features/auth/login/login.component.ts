@@ -123,7 +123,7 @@ export class LoginComponent {
     this.auth.login({ email: this.email, senha: this.senha }).subscribe({
       next: () => this.router.navigate(['/veiculos']),
       error: (err) => {
-        this.erro = err.status === 401 ? 'E-mail ou senha inválidos.' : 'Não foi possível entrar. Tente novamente.';
+        this.erro = err.error?.erro ?? 'Não foi possível entrar. Tente novamente.';
         this.carregando = false;
       }
     });

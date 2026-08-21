@@ -48,12 +48,21 @@ public class ContratosController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ContratoResponse>> Criar(ContratoRequest req)
     {
+        if (req.DataFimPrevista <= req.DataInicio)
+            return BadRequest(new { erro = "A data de término precisa ser depois da data de início." });
+
+        if (req.KmInicial < 0)
+            return BadRequest(new { erro = "O km inicial não pode ser negativo." });
+
+        if (req.ValorDiaria <= 0)
+            return BadRequest(new { erro = "O valor da diária precisa ser maior que zero." });
+
         var veiculo = await _db.Veiculos.FirstOrDefaultAsync(v => v.Id == req.VeiculoId);
-        if (veiculo is null) return BadRequest("Veículo não encontrado.");
-        if (veiculo.Status != "Disponivel") return BadRequest("Veículo não está disponível para locação.");
+        if (veiculo is null) return BadRequest(new { erro = "Veículo não encontrado." });
+        if (veiculo.Status != "Disponivel") return BadRequest(new { erro = "Veículo não está disponível para locação." });
 
         var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == req.ClienteId);
-        if (cliente is null) return BadRequest("Cliente não encontrado.");
+        if (cliente is null) return BadRequest(new { erro = "Cliente não encontrado." });
 
         var contrato = new Contrato
         {
@@ -86,8 +95,8 @@ public class ContratosController : ControllerBase
         var contrato = await _db.Contratos.Include(c => c.Veiculo).Include(c => c.Cliente)
             .FirstOrDefaultAsync(c => c.Id == id);
         if (contrato is null) return NotFound();
-        if (contrato.Status != "Ativo") return BadRequest("Este contrato já foi finalizado ou cancelado.");
-        if (req.KmFinal < contrato.KmInicial) return BadRequest("Km final não pode ser menor que o km inicial.");
+        if (contrato.Status != "Ativo") return BadRequest(new { erro = "Este contrato já foi finalizado ou cancelado." });
+        if (req.KmFinal < contrato.KmInicial) return BadRequest(new { erro = "Km final não pode ser menor que o km inicial." });
 
         contrato.DataFimReal = DateTime.UtcNow;
         contrato.KmFinal = req.KmFinal;
@@ -111,7 +120,7 @@ public class ContratosController : ControllerBase
     {
         var contrato = await _db.Contratos.Include(c => c.Veiculo).FirstOrDefaultAsync(c => c.Id == id);
         if (contrato is null) return NotFound();
-        if (contrato.Status != "Ativo") return BadRequest("Apenas contratos ativos podem ser cancelados.");
+        if (contrato.Status != "Ativo") return BadRequest(new { erro = "Apenas contratos ativos podem ser cancelados." });
 
         contrato.Status = "Cancelado";
         if (contrato.Veiculo is not null) contrato.Veiculo.Status = "Disponivel";

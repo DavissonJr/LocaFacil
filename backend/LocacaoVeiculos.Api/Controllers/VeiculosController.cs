@@ -53,12 +53,20 @@ public class VeiculosController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<VeiculoResponse>> Criar(VeiculoRequest req)
     {
+        var erro = ValidarVeiculo(req);
+        if (erro is not null) return BadRequest(new { erro });
+
+        var placaLimpa = System.Text.RegularExpressions.Regex.Replace(req.Placa, @"[^A-Za-z0-9]", "").ToUpperInvariant();
+
+        if (await _db.Veiculos.AnyAsync(v => v.Placa == placaLimpa))
+            return Conflict(new { erro = "Já existe um veículo cadastrado com essa placa." });
+
         var veiculo = new Veiculo
         {
             EmpresaId = EmpresaId,
-            Placa = req.Placa.ToUpper(),
-            Marca = req.Marca,
-            Modelo = req.Modelo,
+            Placa = placaLimpa,
+            Marca = req.Marca.Trim(),
+            Modelo = req.Modelo.Trim(),
             AnoFabricacao = req.AnoFabricacao,
             AnoModelo = req.AnoModelo,
             Cor = req.Cor,
@@ -79,9 +87,17 @@ public class VeiculosController : ControllerBase
         var veiculo = await _db.Veiculos.FirstOrDefaultAsync(v => v.Id == id);
         if (veiculo is null) return NotFound();
 
-        veiculo.Placa = req.Placa.ToUpper();
-        veiculo.Marca = req.Marca;
-        veiculo.Modelo = req.Modelo;
+        var erro = ValidarVeiculo(req);
+        if (erro is not null) return BadRequest(new { erro });
+
+        var placaLimpa = System.Text.RegularExpressions.Regex.Replace(req.Placa, @"[^A-Za-z0-9]", "").ToUpperInvariant();
+
+        if (await _db.Veiculos.AnyAsync(v => v.Placa == placaLimpa && v.Id != id))
+            return Conflict(new { erro = "Já existe outro veículo cadastrado com essa placa." });
+
+        veiculo.Placa = placaLimpa;
+        veiculo.Marca = req.Marca.Trim();
+        veiculo.Modelo = req.Modelo.Trim();
         veiculo.AnoFabricacao = req.AnoFabricacao;
         veiculo.AnoModelo = req.AnoModelo;
         veiculo.Cor = req.Cor;
@@ -92,6 +108,34 @@ public class VeiculosController : ControllerBase
 
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    private static string? ValidarVeiculo(VeiculoRequest req)
+    {
+        if (!Validadores.PlacaValida(req.Placa))
+            return "Placa inválida. Use o formato ABC1234 ou ABC1D23 (Mercosul).";
+
+        if (string.IsNullOrWhiteSpace(req.Marca))
+            return "Informe a marca do veículo.";
+
+        if (string.IsNullOrWhiteSpace(req.Modelo))
+            return "Informe o modelo do veículo.";
+
+        if (req.ValorDiaria <= 0)
+            return "O valor da diária precisa ser maior que zero.";
+
+        if (req.KmAtual < 0)
+            return "A quilometragem não pode ser negativa.";
+
+        var anoAtual = DateTime.UtcNow.Year;
+        if (req.AnoFabricacao is < 1950 or > 2100 || req.AnoModelo is < 1950 or > 2100)
+            return "Ano de fabricação/modelo inválido.";
+
+        var statusValidos = new[] { "Disponivel", "Locado", "Manutencao", "Inativo" };
+        if (!statusValidos.Contains(req.Status))
+            return "Status inválido.";
+
+        return null;
     }
 
     [HttpDelete("{id:guid}")]
@@ -119,10 +163,10 @@ public class VeiculosController : ControllerBase
         if (veiculo is null) return NotFound();
 
         if (arquivo is null || arquivo.Length == 0)
-            return BadRequest("Nenhum arquivo enviado.");
+            return BadRequest(new { erro = "Nenhum arquivo enviado." });
 
         if (!TiposImagemPermitidos.Contains(arquivo.ContentType))
-            return BadRequest("Formato de imagem não suportado. Use JPEG, PNG ou WEBP.");
+            return BadRequest(new { erro = "Formato de imagem não suportado. Use JPEG, PNG ou WEBP." });
 
         await using var stream = arquivo.OpenReadStream();
         var objectName = await _minio.UploadArquivoAsync(stream, arquivo.FileName, arquivo.ContentType);

@@ -60,6 +60,10 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    // Sem isso, o ASP.NET Core remapeia a claim "sub" pra ClaimTypes.NameIdentifier
+    // por baixo dos panos, e User.FindFirstValue(JwtRegisteredClaimNames.Sub) sempre
+    // retorna null - foi exatamente isso que quebrou a criação de contrato.
+    options.MapInboundClaims = false;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,

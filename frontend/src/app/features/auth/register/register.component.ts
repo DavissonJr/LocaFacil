@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { RegisterEmpresaRequest } from '../../../core/models/auth.model';
+import { maskCnpj, maskTelefone } from '../../../core/utils/mask.util';
 
 @Component({
   selector: 'app-register',
@@ -28,8 +29,8 @@ import { RegisterEmpresaRequest } from '../../../core/models/auth.model';
               <div class="form-field"><label>Nome fantasia</label><input name="nomeFantasia" [(ngModel)]="form.nomeFantasia" /></div>
             </div>
             <div class="grid">
-              <div class="form-field"><label>CNPJ</label><input name="cnpj" [(ngModel)]="form.cnpj" required placeholder="00.000.000/0000-00" /></div>
-              <div class="form-field"><label>Telefone</label><input name="telefone" [(ngModel)]="form.telefone" /></div>
+              <div class="form-field"><label>CNPJ</label><input name="cnpj" [ngModel]="form.cnpj" (ngModelChange)="onCnpjChange($event)" required placeholder="00.000.000/0000-00" maxlength="18" /></div>
+              <div class="form-field"><label>Telefone</label><input name="telefone" [ngModel]="form.telefone" (ngModelChange)="onTelefoneChange($event)" placeholder="(00) 00000-0000" maxlength="15" /></div>
             </div>
             <div class="form-field"><label>E-mail da empresa</label><input type="email" name="empresaEmail" [(ngModel)]="form.empresaEmail" required /></div>
 
@@ -139,15 +140,21 @@ export class RegisterComponent {
 
   constructor(private auth: AuthService, private router: Router) {}
 
+  onCnpjChange(valor: string): void {
+    this.form.cnpj = maskCnpj(valor);
+  }
+
+  onTelefoneChange(valor: string): void {
+    this.form.telefone = maskTelefone(valor);
+  }
+
   registrar(): void {
     this.erro = '';
     this.carregando = true;
     this.auth.registrarEmpresa(this.form).subscribe({
       next: () => this.router.navigate(['/veiculos']),
       error: (err) => {
-        this.erro = err.status === 409
-          ? 'Já existe uma empresa cadastrada com esse CNPJ.'
-          : (err.error?.detalhe ?? 'Não foi possível criar a conta. Verifique os dados.');
+        this.erro = err.error?.erro ?? 'Não foi possível criar a conta. Verifique os dados.';
         this.carregando = false;
       }
     });

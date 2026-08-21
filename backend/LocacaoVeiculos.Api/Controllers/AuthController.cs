@@ -24,15 +24,36 @@ public class AuthController : ControllerBase
     [HttpPost("registrar-empresa")]
     public async Task<ActionResult<AuthResponse>> RegistrarEmpresa(RegisterEmpresaRequest req)
     {
+        if (string.IsNullOrWhiteSpace(req.RazaoSocial))
+            return BadRequest(new { erro = "Informe a razão social da empresa." });
+
+        if (!Validadores.CnpjValido(req.CNPJ))
+            return BadRequest(new { erro = "CNPJ inválido. Confira os números digitados." });
+
+        if (!Validadores.EmailValido(req.EmpresaEmail))
+            return BadRequest(new { erro = "E-mail da empresa inválido." });
+
+        if (string.IsNullOrWhiteSpace(req.AdminNome))
+            return BadRequest(new { erro = "Informe seu nome." });
+
+        if (!Validadores.EmailValido(req.AdminEmail))
+            return BadRequest(new { erro = "E-mail de login inválido." });
+
+        if (string.IsNullOrWhiteSpace(req.AdminSenha) || req.AdminSenha.Length < 6)
+            return BadRequest(new { erro = "A senha precisa ter pelo menos 6 caracteres." });
+
         if (await _db.Empresas.AnyAsync(e => e.CNPJ == req.CNPJ))
-            return Conflict("Já existe uma empresa cadastrada com esse CNPJ.");
+            return Conflict(new { erro = "Já existe uma empresa cadastrada com esse CNPJ." });
+
+        if (await _db.Usuarios.AnyAsync(u => u.Email == req.AdminEmail))
+            return Conflict(new { erro = "Já existe um usuário cadastrado com esse e-mail." });
 
         var empresa = new Empresa
         {
-            RazaoSocial = req.RazaoSocial,
-            NomeFantasia = req.NomeFantasia,
+            RazaoSocial = req.RazaoSocial.Trim(),
+            NomeFantasia = req.NomeFantasia?.Trim(),
             CNPJ = req.CNPJ,
-            Email = req.EmpresaEmail,
+            Email = req.EmpresaEmail.Trim(),
             Telefone = req.Telefone
         };
         _db.Empresas.Add(empresa);
@@ -40,8 +61,8 @@ public class AuthController : ControllerBase
         var admin = new Usuario
         {
             EmpresaId = empresa.Id,
-            Nome = req.AdminNome,
-            Email = req.AdminEmail,
+            Nome = req.AdminNome.Trim(),
+            Email = req.AdminEmail.Trim().ToLowerInvariant(),
             SenhaHash = BCrypt.Net.BCrypt.HashPassword(req.AdminSenha),
             Role = "Admin"
         };
@@ -56,12 +77,15 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponse>> Login(LoginRequest req)
     {
+        if (string.IsNullOrWhiteSpace(req.Email) || string.IsNullOrWhiteSpace(req.Senha))
+            return BadRequest(new { erro = "Informe e-mail e senha." });
+
         var usuario = await _db.Usuarios
             .Include(u => u.Empresa)
-            .FirstOrDefaultAsync(u => u.Email == req.Email && u.Ativo);
+            .FirstOrDefaultAsync(u => u.Email == req.Email.Trim().ToLower() && u.Ativo);
 
         if (usuario is null || !BCrypt.Net.BCrypt.Verify(req.Senha, usuario.SenhaHash))
-            return Unauthorized("E-mail ou senha inválidos.");
+            return Unauthorized(new { erro = "E-mail ou senha inválidos." });
 
         var (token, expiraEm) = _tokenService.GerarToken(usuario);
         return Ok(new AuthResponse(token, expiraEm, usuario.Id, usuario.Nome, usuario.Role, usuario.EmpresaId,

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { ClientesService } from './clientes.service';
 import { Cliente, ClienteRequest } from '../../core/models/cliente.model';
+import { maskDocumento, maskTelefone } from '../../core/utils/mask.util';
 
 const CLIENTE_VAZIO: ClienteRequest = {
   nome: '', documentoTipo: 'CPF', documento: '', email: '', telefone: '', endereco: '', cnh: '', validadeCNH: ''
@@ -38,7 +39,7 @@ const CLIENTE_VAZIO: ClienteRequest = {
         <tbody>
           <tr *ngFor="let c of clientes">
             <td><strong>{{ c.nome }}</strong></td>
-            <td>{{ c.documentoTipo }}: {{ c.documento }}</td>
+            <td>{{ c.documentoTipo }}: {{ maskDocumento(c.documento, c.documentoTipo) }}</td>
             <td>{{ c.telefone || '—' }}<br /><span class="muted">{{ c.email || '' }}</span></td>
             <td>{{ c.cnh || '—' }}</td>
             <td>
@@ -78,16 +79,21 @@ const CLIENTE_VAZIO: ClienteRequest = {
         <div class="grid-2">
           <div class="form-field">
             <label>Tipo de documento</label>
-            <select [(ngModel)]="form.documentoTipo" name="documentoTipo">
+            <select [(ngModel)]="form.documentoTipo" name="documentoTipo" (ngModelChange)="onDocumentoChange(form.documento)">
               <option value="CPF">CPF</option>
               <option value="CNPJ">CNPJ</option>
             </select>
           </div>
-          <div class="form-field"><label>Número</label><input [(ngModel)]="form.documento" name="documento" required /></div>
+          <div class="form-field">
+            <label>Número</label>
+            <input [ngModel]="form.documento" (ngModelChange)="onDocumentoChange($event)" name="documento" required
+                   [placeholder]="form.documentoTipo === 'CPF' ? '000.000.000-00' : '00.000.000/0000-00'"
+                   [maxlength]="form.documentoTipo === 'CPF' ? 14 : 18" />
+          </div>
         </div>
         <div class="grid-2">
           <div class="form-field"><label>E-mail</label><input type="email" [(ngModel)]="form.email" name="email" /></div>
-          <div class="form-field"><label>Telefone</label><input [(ngModel)]="form.telefone" name="telefone" /></div>
+          <div class="form-field"><label>Telefone</label><input [ngModel]="form.telefone" (ngModelChange)="onTelefoneChange($event)" name="telefone" placeholder="(00) 00000-0000" maxlength="15" /></div>
         </div>
         <div class="form-field"><label>Endereço</label><input [(ngModel)]="form.endereco" name="endereco" /></div>
         <div class="grid-2">
@@ -209,6 +215,8 @@ const CLIENTE_VAZIO: ClienteRequest = {
   `]
 })
 export class ClientesListComponent implements OnInit {
+  maskDocumento = maskDocumento;
+
   clientes: Cliente[] = [];
   busca = '';
   modalAberto = false;
@@ -251,12 +259,20 @@ export class ClientesListComponent implements OnInit {
   abrirEditar(c: Cliente): void {
     this.editandoId = c.id;
     this.form = {
-      nome: c.nome, documentoTipo: c.documentoTipo, documento: c.documento,
+      nome: c.nome, documentoTipo: c.documentoTipo, documento: maskDocumento(c.documento, c.documentoTipo),
       email: c.email, telefone: c.telefone, endereco: c.endereco,
       cnh: c.cnh, validadeCNH: c.validadeCNH?.substring(0, 10)
     };
     this.erro = '';
     this.modalAberto = true;
+  }
+
+  onDocumentoChange(valor: string): void {
+    this.form.documento = maskDocumento(valor, this.form.documentoTipo as 'CPF' | 'CNPJ');
+  }
+
+  onTelefoneChange(valor: string): void {
+    this.form.telefone = maskTelefone(valor);
   }
 
   fecharModal(): void {
@@ -276,9 +292,9 @@ export class ClientesListComponent implements OnInit {
         this.modalAberto = false;
         this.carregar();
       },
-      error: () => {
+      error: (err) => {
         this.salvando = false;
-        this.erro = 'Não foi possível salvar. Verifique os dados (documento duplicado?).';
+        this.erro = err.error?.erro ?? 'Não foi possível salvar.';
       }
     });
   }
@@ -311,9 +327,9 @@ export class ClientesListComponent implements OnInit {
         this.enviandoDocumento = false;
         input.value = '';
       },
-      error: () => {
+      error: (err) => {
         this.enviandoDocumento = false;
-        alert('Não foi possível enviar o documento.');
+        alert(err.error?.erro ?? 'Não foi possível enviar o documento.');
       }
     });
   }
