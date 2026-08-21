@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LocacaoVeiculos.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260821154304_InitialCreate")]
+    [Migration("20260821163025_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -231,6 +231,9 @@ namespace LocacaoVeiculos.Api.Migrations
 
                     b.Property<short?>("AnoModelo")
                         .HasColumnType("smallint");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Categoria")
                         .HasColumnType("nvarchar(max)");

@@ -33,7 +33,7 @@ public class ClientesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ClienteResponse>>> Listar([FromQuery] string? busca)
     {
-        var query = _db.Clientes.AsQueryable();
+        var query = _db.Clientes.Where(c => c.Ativo).AsQueryable();
         if (!string.IsNullOrWhiteSpace(busca))
             query = query.Where(c => c.Nome.Contains(busca) || c.Documento.Contains(busca));
 
@@ -129,6 +129,10 @@ public class ClientesController : ControllerBase
     {
         var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == id);
         if (cliente is null) return NotFound();
+
+        var temContratoAtivo = await _db.Contratos.AnyAsync(c => c.ClienteId == id && c.Status == "Ativo");
+        if (temContratoAtivo)
+            return BadRequest(new { erro = "Este cliente tem um contrato ativo vinculado. Finalize ou cancele o contrato antes de removê-lo." });
 
         cliente.Ativo = false; // soft delete: preserva histórico de contratos
         await _db.SaveChangesAsync();

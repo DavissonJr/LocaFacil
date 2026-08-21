@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 * { box-sizing: border-box; }
 
 :root {
@@ -173,6 +177,8 @@ h1, h2, h3, p { margin: 0; }
 
 /* ---------- Tables ---------- */
 table { width: 100%; border-collapse: collapse; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-wrap table { min-width: 640px; }
 th {
   text-align: left;
   font-size: 11px;
@@ -223,15 +229,11 @@ tbody tr:hover td { background: var(--color-surface-hover); }
   backdrop-filter: blur(6px);
   display: flex; align-items: center; justify-content: center;
   z-index: 50; padding: 20px;
-  animation: fadeIn 0.2s var(--ease);
 }
 .modal {
   width: 100%;
   box-shadow: var(--shadow), var(--shadow-glow);
-  animation: slideUp 0.25s var(--ease-spring);
 }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
 /* ---------- Entrance animations ---------- */
 .page-enter { animation: fadeInUp 0.3s var(--ease); }

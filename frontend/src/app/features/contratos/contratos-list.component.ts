@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ContratosService } from './contratos.service';
 import { VeiculosService } from '../veiculos/veiculos.service';
 import { ClientesService } from '../clientes/clientes.service';
+import { backdropFade, modalSpring } from '../../core/animations/fluid.animations';
 import { Contrato, ContratoRequest } from '../../core/models/contrato.model';
 import { Veiculo } from '../../core/models/veiculo.model';
 import { Cliente } from '../../core/models/cliente.model';
@@ -30,7 +31,7 @@ import { Cliente } from '../../core/models/cliente.model';
       <button class="btn" [class.btn-primary]="filtroStatus === 'Finalizado'" [class.btn-secondary]="filtroStatus !== 'Finalizado'" (click)="filtrar('Finalizado')">Finalizados</button>
     </div>
 
-    <div class="card" *ngIf="contratos.length > 0; else vazio">
+    <div class="card table-wrap" *ngIf="contratos.length > 0; else vazio">
       <table>
         <thead>
           <tr><th>Veículo</th><th>Cliente</th><th>Início</th><th>Previsão fim</th><th>Valor</th><th>Status</th><th></th></tr>
@@ -64,8 +65,8 @@ import { Cliente } from '../../core/models/cliente.model';
     </ng-template>
 
     <!-- Modal nova locação -->
-    <div class="modal-backdrop" *ngIf="modalNovoAberto" (click)="fecharModais()">
-      <div class="modal card" (click)="$event.stopPropagation()">
+    <div class="modal-backdrop" *ngIf="modalNovoAberto" (click)="fecharModais()" @backdropFade>
+      <div class="modal card" (click)="$event.stopPropagation()" @modalSpring>
         <h3>Nova locação</h3>
 
         <div class="form-field">
@@ -104,8 +105,8 @@ import { Cliente } from '../../core/models/cliente.model';
     </div>
 
     <!-- Modal finalizar -->
-    <div class="modal-backdrop" *ngIf="modalFinalizarAberto" (click)="fecharModais()">
-      <div class="modal card small" (click)="$event.stopPropagation()">
+    <div class="modal-backdrop" *ngIf="modalFinalizarAberto" (click)="fecharModais()" @backdropFade>
+      <div class="modal card small" (click)="$event.stopPropagation()" @modalSpring>
         <h3>Finalizar locação</h3>
         <p class="muted">{{ contratoSelecionado?.veiculoDescricao }} — {{ contratoSelecionado?.clienteNome }}</p>
         <div class="form-field">
@@ -137,7 +138,8 @@ import { Cliente } from '../../core/models/cliente.model';
     .modal .muted { margin-bottom: 20px; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
-  `]
+  `],
+  animations: [backdropFade, modalSpring]
 })
 export class ContratosListComponent implements OnInit {
   contratos: Contrato[] = [];

@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
@@ -9,12 +10,32 @@ import { AuthService } from '../../core/services/auth.service';
   imports: [CommonModule, RouterLink, RouterLinkActive, RouterOutlet],
   template: `
     <div class="shell">
-      <aside class="sidebar">
+      <!-- Topbar mobile -->
+      <header class="mobile-topbar md:hidden">
+        <button class="menu-btn" (click)="menuAberto = true" aria-label="Abrir menu">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <div class="brand-mini">
+          <div class="brand-icon">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11m-14 0h14m-14 0a2 2 0 0 0-2 2v4a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h12v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-4a2 2 0 0 0-2-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="16.5" cy="15.5" r="1.2" fill="currentColor"/></svg>
+          </div>
+          <span>LocaFácil</span>
+        </div>
+        <a routerLink="/perfil" class="avatar-mini">{{ iniciais() }}</a>
+      </header>
+
+      <!-- Overlay mobile -->
+      <div class="drawer-overlay md:hidden" *ngIf="menuAberto" (click)="menuAberto = false"></div>
+
+      <aside class="sidebar" [class.drawer-open]="menuAberto">
         <div class="brand">
           <div class="brand-icon">
             <svg viewBox="0 0 24 24" fill="none"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11m-14 0h14m-14 0a2 2 0 0 0-2 2v4a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h12v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-4a2 2 0 0 0-2-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="16.5" cy="15.5" r="1.2" fill="currentColor"/></svg>
           </div>
           <span>LocaFácil</span>
+          <button class="close-btn md:hidden" (click)="menuAberto = false" aria-label="Fechar menu">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
         </div>
 
         <nav>
@@ -33,13 +54,13 @@ import { AuthService } from '../../core/services/auth.service';
         </nav>
 
         <div class="user-box">
-          <div class="user-row">
+          <a routerLink="/perfil" class="user-row" routerLinkActive="user-row-active">
             <div class="avatar">{{ iniciais() }}</div>
             <div class="user-info">
               <div class="user-name">{{ auth.usuario()?.nome }}</div>
               <div class="user-empresa">{{ auth.usuario()?.empresaNome }}</div>
             </div>
-          </div>
+          </a>
           <button class="btn btn-secondary logout" (click)="sair()">
             <svg viewBox="0 0 24 24" fill="none"><path d="M15 17l5-5-5-5M20 12H9M12 19H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Sair
@@ -54,6 +75,26 @@ import { AuthService } from '../../core/services/auth.service';
   `,
   styles: [`
     .shell { display: flex; min-height: 100vh; }
+
+    .mobile-topbar {
+      position: fixed; top: 0; left: 0; right: 0; height: 58px; z-index: 30;
+      background: var(--color-bg-elevated); border-bottom: 1px solid var(--color-border);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 16px;
+    }
+    .menu-btn { background: none; border: none; color: var(--color-text); padding: 6px; cursor: pointer; }
+    .menu-btn svg { width: 22px; height: 22px; }
+    .brand-mini { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; }
+    .brand-mini .brand-icon { width: 26px; height: 26px; }
+    .brand-mini .brand-icon svg { width: 14px; height: 14px; }
+    .avatar-mini {
+      width: 30px; height: 30px; border-radius: 50%; text-decoration: none;
+      background: linear-gradient(135deg, var(--color-primary-bright), var(--color-primary-dark));
+      color: white; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800;
+    }
+
+    .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 39; backdrop-filter: blur(2px); }
+
     .sidebar {
       width: 256px;
       background: var(--color-bg-elevated);
@@ -70,10 +111,12 @@ import { AuthService } from '../../core/services/auth.service';
       width: 36px; height: 36px; border-radius: 11px;
       background: linear-gradient(135deg, var(--color-primary-bright), var(--color-primary-dark));
       color: white; display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 14px var(--color-primary-glow);
+      box-shadow: 0 4px 14px var(--color-primary-glow); flex-shrink: 0;
     }
     .brand-icon svg { width: 20px; height: 20px; }
-    .brand span { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
+    .brand span { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; flex: 1; }
+    .close-btn { background: none; border: none; color: var(--color-text-muted); cursor: pointer; padding: 4px; }
+    .close-btn svg { width: 18px; height: 18px; }
 
     nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
     nav a {
@@ -102,7 +145,11 @@ import { AuthService } from '../../core/services/auth.service';
     }
 
     .user-box { border-top: 1px solid var(--color-border); padding-top: 16px; }
-    .user-row { display: flex; align-items: center; gap: 10px; padding: 0 4px; margin-bottom: 14px; }
+    .user-row {
+      display: flex; align-items: center; gap: 10px; padding: 8px 4px; margin-bottom: 10px;
+      text-decoration: none; border-radius: var(--radius-sm); transition: background 0.15s;
+    }
+    .user-row:hover, .user-row-active { background: var(--color-surface); }
     .avatar {
       width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
       background: linear-gradient(135deg, var(--color-primary-bright), var(--color-primary-dark));
@@ -112,15 +159,31 @@ import { AuthService } from '../../core/services/auth.service';
       box-shadow: 0 2px 10px var(--color-primary-glow);
     }
     .user-info { min-width: 0; }
-    .user-name { font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-name { font-size: 13.5px; font-weight: 700; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .user-empresa { font-size: 12px; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .logout { width: 100%; justify-content: center; }
 
     .content { flex: 1; padding: 38px 42px; max-width: 1220px; }
+
+    @media (max-width: 767px) {
+      .shell { flex-direction: column; }
+      .sidebar {
+        position: fixed; top: 0; left: 0; height: 100vh; z-index: 40;
+        transform: translateX(-100%);
+        transition: transform 0.28s var(--ease-spring);
+        box-shadow: var(--shadow-lg);
+      }
+      .sidebar.drawer-open { transform: translateX(0); }
+      .content { padding: 78px 18px 32px; max-width: 100%; }
+    }
   `]
 })
 export class ShellComponent {
-  constructor(public auth: AuthService, private router: Router) {}
+  menuAberto = false;
+
+  constructor(public auth: AuthService, private router: Router) {
+    this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(() => this.menuAberto = false);
+  }
 
   iniciais(): string {
     const nome = this.auth.usuario()?.nome ?? '';

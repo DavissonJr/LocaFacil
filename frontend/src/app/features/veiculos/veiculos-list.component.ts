@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { VeiculosService } from './veiculos.service';
 import { Veiculo, VeiculoRequest } from '../../core/models/veiculo.model';
 import { maskPlaca } from '../../core/utils/mask.util';
+import { backdropFade, modalSpring } from '../../core/animations/fluid.animations';
 
 const VEICULO_VAZIO: VeiculoRequest = {
   placa: '', marca: '', modelo: '', cor: '', categoria: '',
@@ -57,8 +58,9 @@ interface FotoExistente {
 
     <div class="grid" *ngIf="veiculos.length > 0; else vazio">
       <div class="veiculo-card card stagger-item" *ngFor="let v of veiculos; let i = index" [style.animation-delay.ms]="i * 45">
-        <div class="thumb" [style.background-image]="v.fotos[0] ? 'url(' + v.fotos[0].url + ')' : ''" (click)="abrirEditar(v)">
-          <svg *ngIf="!v.fotos[0]" viewBox="0 0 24 24" fill="none"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11m-14 0h14m-14 0a2 2 0 0 0-2 2v4a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h12v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-4a2 2 0 0 0-2-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.5" cy="15.5" r="1" fill="currentColor"/><circle cx="16.5" cy="15.5" r="1" fill="currentColor"/></svg>
+        <div class="thumb" (click)="abrirEditar(v)">
+          <img *ngIf="v.fotos[0] && !fotosComErro.has(v.id)" [src]="v.fotos[0].url" alt="Foto do veículo" (error)="onImgError(v.id)" />
+          <svg *ngIf="!v.fotos[0] || fotosComErro.has(v.id)" viewBox="0 0 24 24" fill="none"><path d="M5 11l1.5-4.5A2 2 0 0 1 8.4 5h7.2a2 2 0 0 1 1.9 1.5L19 11m-14 0h14m-14 0a2 2 0 0 0-2 2v4a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h12v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-4a2 2 0 0 0-2-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.5" cy="15.5" r="1" fill="currentColor"/><circle cx="16.5" cy="15.5" r="1" fill="currentColor"/></svg>
           <span class="badge thumb-badge" [ngClass]="statusClass(v.status)">{{ statusLabel(v.status) }}</span>
           <span class="thumb-count" *ngIf="v.fotos.length > 0">
             <svg viewBox="0 0 24 24" fill="none" width="12" height="12"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2"/><circle cx="8.5" cy="10" r="1.5" fill="currentColor"/></svg>
@@ -92,8 +94,8 @@ interface FotoExistente {
     </ng-template>
 
     <!-- Modal cadastro/edição -->
-    <div class="modal-backdrop" *ngIf="modalAberto" (click)="fecharModal()">
-      <div class="modal card" (click)="$event.stopPropagation()">
+    <div class="modal-backdrop" *ngIf="modalAberto" (click)="fecharModal()" @backdropFade>
+      <div class="modal card" (click)="$event.stopPropagation()" @modalSpring>
         <h3>{{ editandoId ? 'Editar veículo' : 'Novo veículo' }}</h3>
 
         <div class="grid-2">
@@ -166,6 +168,7 @@ interface FotoExistente {
     .subtitle { color: var(--color-text-muted); font-size: 14px; margin-top: 4px; }
 
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+    @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
     .stat-card {
       background: var(--color-surface); border: 1.5px solid var(--color-border); border-radius: var(--radius);
       padding: 17px 19px; cursor: pointer; transition: all 0.18s var(--ease);
@@ -184,10 +187,11 @@ interface FotoExistente {
     .veiculo-card:hover { transform: translateY(-4px); border-color: var(--color-border-bright); box-shadow: var(--shadow-glow); }
     .thumb {
       height: 150px; position: relative; cursor: pointer;
-      background-color: var(--color-muted-bg); background-size: cover; background-position: center;
+      background-color: var(--color-muted-bg);
       display: flex; align-items: center; justify-content: center; color: var(--color-text-faint);
     }
-    .thumb svg { width: 40px; height: 40px; }
+    .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .thumb svg { width: 40px; height: 40px; position: relative; z-index: 1; }
     .thumb-badge { position: absolute; top: 10px; right: 10px; background: rgba(8,9,13,0.85); backdrop-filter: blur(4px); }
     .thumb-count {
       position: absolute; bottom: 10px; left: 10px;
@@ -243,7 +247,8 @@ interface FotoExistente {
     }
     .remove-btn svg { width: 12px; height: 12px; }
     .remove-btn:hover { background: var(--color-danger); }
-  `]
+  `],
+  animations: [backdropFade, modalSpring]
 })
 export class VeiculosListComponent implements OnInit {
   veiculos: Veiculo[] = [];
@@ -259,7 +264,13 @@ export class VeiculosListComponent implements OnInit {
   fotosExistentes: FotoExistente[] = []; // fotos já salvas no servidor (modo edição)
   fotosNovas: FotoStaged[] = [];          // fotos escolhidas nesta sessão, ainda não enviadas
 
+  fotosComErro = new Set<string>();
+
   constructor(private service: VeiculosService) {}
+
+  onImgError(veiculoId: string): void {
+    this.fotosComErro.add(veiculoId);
+  }
 
   ngOnInit(): void {
     this.carregar();
@@ -392,7 +403,10 @@ export class VeiculosListComponent implements OnInit {
 
   remover(v: Veiculo): void {
     if (!confirm(`Excluir o veículo ${v.marca} ${v.modelo} (${v.placa})?`)) return;
-    this.service.remover(v.id).subscribe(() => this.carregar());
+    this.service.remover(v.id).subscribe({
+      next: () => this.carregar(),
+      error: (err) => alert(err.error?.erro ?? 'Não foi possível excluir o veículo.')
+    });
   }
 
   statusLabel(status: string): string {

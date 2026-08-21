@@ -34,21 +34,23 @@ public class MinioService : IMinioService
         if (!existe)
         {
             await _client.MakeBucketAsync(new MakeBucketArgs().WithBucket(_bucket));
-
-            // Torna o bucket público para leitura (fotos de veículos não são sensíveis)
-            var policy = $$"""
-            {
-                "Version": "2012-10-17",
-                "Statement": [{
-                    "Effect": "Allow",
-                    "Principal": {"AWS": ["*"]},
-                    "Action": ["s3:GetObject"],
-                    "Resource": ["arn:aws:s3:::{{_bucket}}/*"]
-                }]
-            }
-            """;
-            await _client.SetPolicyAsync(new SetPolicyArgs().WithBucket(_bucket).WithPolicy(policy));
         }
+
+        // Sempre reaplica a política (idempotente) - se o bucket já existia de uma
+        // execução anterior sem essa policy, os arquivos ficavam privados e o
+        // navegador recebia 403 ao tentar carregar a imagem.
+        var policy = $$"""
+        {
+            "Version": "2012-10-17",
+            "Statement": [{
+                "Effect": "Allow",
+                "Principal": {"AWS": ["*"]},
+                "Action": ["s3:GetObject"],
+                "Resource": ["arn:aws:s3:::{{_bucket}}/*"]
+            }]
+        }
+        """;
+        await _client.SetPolicyAsync(new SetPolicyArgs().WithBucket(_bucket).WithPolicy(policy));
     }
 
     public async Task<string> UploadArquivoAsync(Stream fileStream, string fileName, string contentType)

@@ -22,3 +22,20 @@ public record AuthResponse(
     Guid EmpresaId,
     string EmpresaNome
 );
+
+public record PerfilResponse(
+    Guid Id,
+    string Nome,
+    string Email,
+    string Role,
+    Guid EmpresaId,
+    string EmpresaNome,
+    string EmpresaCNPJ,
+    DateTime DataCriacao
+);
+
+public record AtualizarPerfilRequest(string Nome, string Email);
+
+public record AlterarSenhaRequest(string SenhaAtual, string NovaSenha);
+
+public record ExcluirEmpresaRequest(string Senha, string ConfirmacaoNomeEmpresa);

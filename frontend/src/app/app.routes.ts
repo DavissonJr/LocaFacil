@@ -27,6 +27,10 @@ export const routes: Routes = [
       {
         path: 'contratos',
         loadComponent: () => import('./features/contratos/contratos-list.component').then(m => m.ContratosListComponent)
+      },
+      {
+        path: 'perfil',
+        loadComponent: () => import('./features/perfil/perfil.component').then(m => m.PerfilComponent)
       }
     ]
   },

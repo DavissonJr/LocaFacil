@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { ClientesService } from './clientes.service';
+import { backdropFade, modalSpring } from '../../core/animations/fluid.animations';
 import { Cliente, ClienteRequest } from '../../core/models/cliente.model';
 import { maskDocumento, maskTelefone } from '../../core/utils/mask.util';
 
@@ -31,7 +32,7 @@ const CLIENTE_VAZIO: ClienteRequest = {
       <input placeholder="Buscar por nome ou documento..." [(ngModel)]="busca" (ngModelChange)="buscar()" />
     </div>
 
-    <div class="card" *ngIf="clientes.length > 0; else vazio">
+    <div class="card table-wrap" *ngIf="clientes.length > 0; else vazio">
       <table>
         <thead>
           <tr><th>Nome</th><th>Documento</th><th>Contato</th><th>CNH</th><th>Doc.</th><th></th></tr>
@@ -71,8 +72,8 @@ const CLIENTE_VAZIO: ClienteRequest = {
     </ng-template>
 
     <!-- Modal cadastro/edição -->
-    <div class="modal-backdrop" *ngIf="modalAberto" (click)="fecharModal()">
-      <div class="modal card" (click)="$event.stopPropagation()">
+    <div class="modal-backdrop" *ngIf="modalAberto" (click)="fecharModal()" @backdropFade>
+      <div class="modal card" (click)="$event.stopPropagation()" @modalSpring>
         <h3>{{ editandoId ? 'Editar cliente' : 'Novo cliente' }}</h3>
 
         <div class="form-field"><label>Nome completo</label><input [(ngModel)]="form.nome" name="nome" required /></div>
@@ -111,8 +112,8 @@ const CLIENTE_VAZIO: ClienteRequest = {
     </div>
 
     <!-- Modal documento -->
-    <div class="modal-backdrop" *ngIf="modalDocumentoAberto" (click)="fecharDocumento()">
-      <div class="modal card doc-modal" (click)="$event.stopPropagation()">
+    <div class="modal-backdrop" *ngIf="modalDocumentoAberto" (click)="fecharDocumento()" @backdropFade>
+      <div class="modal card doc-modal" (click)="$event.stopPropagation()" @modalSpring>
         <h3>Documento de identificação</h3>
         <p class="muted">{{ clienteSelecionado?.nome }}</p>
 
@@ -212,7 +213,8 @@ const CLIENTE_VAZIO: ClienteRequest = {
     .doc-frame.filled .frame-corner { display: none; }
 
     .troca-btn { display: flex; margin: 16px auto 0; }
-  `]
+  `],
+  animations: [backdropFade, modalSpring]
 })
 export class ClientesListComponent implements OnInit {
   maskDocumento = maskDocumento;
@@ -301,7 +303,10 @@ export class ClientesListComponent implements OnInit {
 
   remover(c: Cliente): void {
     if (!confirm(`Excluir o cliente ${c.nome}?`)) return;
-    this.service.remover(c.id).subscribe(() => this.carregar());
+    this.service.remover(c.id).subscribe({
+      next: () => this.carregar(),
+      error: (err) => alert(err.error?.erro ?? 'Não foi possível excluir o cliente.')
+    });
   }
 
   abrirDocumento(c: Cliente): void {

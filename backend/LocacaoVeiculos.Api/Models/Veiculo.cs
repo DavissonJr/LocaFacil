@@ -16,6 +16,7 @@ public class Veiculo
     public decimal ValorDiaria { get; set; }
     public int KmAtual { get; set; }
     public string Status { get; set; } = "Disponivel"; // Disponivel | Locado | Manutencao | Inativo
+    public bool Ativo { get; set; } = true;
     public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
 
     public ICollection<VeiculoFoto> Fotos { get; set; } = new List<VeiculoFoto>();

@@ -99,6 +99,7 @@ namespace LocacaoVeiculos.Api.Migrations
                     ValorDiaria = table.Column<decimal>(type: "decimal(10,2)", nullable: false),
                     KmAtual = table.Column<int>(type: "int", nullable: false),
                     Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Ativo = table.Column<bool>(type: "bit", nullable: false),
                     DataCriacao = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>

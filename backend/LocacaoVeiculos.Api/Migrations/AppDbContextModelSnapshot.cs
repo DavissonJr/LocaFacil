@@ -229,6 +229,9 @@ namespace LocacaoVeiculos.Api.Migrations
                     b.Property<short?>("AnoModelo")
                         .HasColumnType("smallint");
 
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Categoria")
                         .HasColumnType("nvarchar(max)");
 

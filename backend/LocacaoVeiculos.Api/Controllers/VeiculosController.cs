@@ -34,7 +34,7 @@ public class VeiculosController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<VeiculoResponse>>> Listar([FromQuery] string? status)
     {
-        var query = _db.Veiculos.Include(v => v.Fotos).AsQueryable();
+        var query = _db.Veiculos.Include(v => v.Fotos).Where(v => v.Ativo).AsQueryable();
         if (!string.IsNullOrWhiteSpace(status))
             query = query.Where(v => v.Status == status);
 
@@ -141,15 +141,19 @@ public class VeiculosController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Remover(Guid id)
     {
-        var veiculo = await _db.Veiculos.Include(v => v.Fotos).FirstOrDefaultAsync(v => v.Id == id);
+        var veiculo = await _db.Veiculos.FirstOrDefaultAsync(v => v.Id == id);
         if (veiculo is null) return NotFound();
 
-        foreach (var foto in veiculo.Fotos)
-        {
-            try { await _minio.RemoverArquivoAsync(foto.ObjectName); } catch { /* melhor não travar a exclusão por causa disso */ }
-        }
+        if (veiculo.Status == "Locado")
+            return BadRequest(new { erro = "Este veículo está locado no momento. Finalize ou cancele a locação antes de removê-lo." });
 
-        _db.Veiculos.Remove(veiculo);
+        var temContratoAtivo = await _db.Contratos.AnyAsync(c => c.VeiculoId == id && c.Status == "Ativo");
+        if (temContratoAtivo)
+            return BadRequest(new { erro = "Este veículo tem um contrato ativo vinculado. Finalize ou cancele o contrato antes de removê-lo." });
+
+        // Soft delete: contratos finalizados/cancelados continuam referenciando este veículo
+        // no histórico, então não dá (nem deveria) apagar a linha de verdade do banco.
+        veiculo.Ativo = false;
         await _db.SaveChangesAsync();
         return NoContent();
     }
