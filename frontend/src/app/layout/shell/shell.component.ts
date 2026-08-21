@@ -93,7 +93,7 @@ import { AuthService } from '../../core/services/auth.service';
       font-size: 11px; font-weight: 800;
     }
 
-    .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 39; backdrop-filter: blur(2px); }
+    .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 45; backdrop-filter: blur(2px); }
 
     .sidebar {
       width: 256px;
@@ -165,10 +165,17 @@ import { AuthService } from '../../core/services/auth.service';
 
     .content { flex: 1; padding: 38px 42px; max-width: 1220px; }
 
+    /* Garantia extra (independente do Tailwind): o topbar mobile nunca aparece
+       em telas médias/grandes, então não tem como sobrepor a sidebar fixa. */
+    @media (min-width: 768px) {
+      .mobile-topbar { display: none !important; }
+    }
+
     @media (max-width: 767px) {
       .shell { flex-direction: column; }
+      .mobile-topbar { z-index: 41; }
       .sidebar {
-        position: fixed; top: 0; left: 0; height: 100vh; z-index: 40;
+        position: fixed; top: 0; left: 0; height: 100vh; z-index: 50;
         transform: translateX(-100%);
         transition: transform 0.28s var(--ease-spring);
         box-shadow: var(--shadow-lg);

@@ -137,6 +137,7 @@ h1, h2, h3, p { margin: 0; }
 .form-field input,
 .form-field select,
 .form-field textarea {
+  min-width: 0;
   padding: 12px 14px;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-sm);

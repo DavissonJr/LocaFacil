@@ -110,7 +110,7 @@ import { maskCnpj, maskTelefone } from '../../../core/utils/mask.util';
     .dot { width: 6px; height: 6px; border-radius: 50%; background: #ff4d5e; box-shadow: 0 0 8px #ff4d5e; flex-shrink: 0; }
 
     .form-side { flex: 1.15; display: flex; align-items: center; justify-content: center; padding: 40px 24px; overflow-y: auto; }
-    .auth-card { width: 100%; max-width: 460px; }
+    .auth-card { width: 100%; max-width: 500px; }
     .back-link {
       display: inline-flex; align-items: center; gap: 6px;
       font-size: 13px; font-weight: 600; color: var(--color-text-muted);
@@ -124,7 +124,7 @@ import { maskCnpj, maskTelefone } from '../../../core/utils/mask.util';
       color: var(--color-primary-bright); margin: 24px 0 14px;
     }
     .section-label:first-of-type { margin-top: 4px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
     .full { width: 100%; justify-content: center; margin-top: 10px; padding: 13px; font-size: 15px; }
 
     @media (max-width: 860px) { .hero { display: none; } }

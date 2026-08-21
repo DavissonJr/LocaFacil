@@ -5,6 +5,7 @@ import { VeiculosService } from './veiculos.service';
 import { Veiculo, VeiculoRequest } from '../../core/models/veiculo.model';
 import { maskPlaca } from '../../core/utils/mask.util';
 import { backdropFade, modalSpring } from '../../core/animations/fluid.animations';
+import { DialogService } from '../../core/services/dialog.service';
 
 const VEICULO_VAZIO: VeiculoRequest = {
   placa: '', marca: '', modelo: '', cor: '', categoria: '',
@@ -209,10 +210,10 @@ interface FotoExistente {
     .actions .btn svg { width: 15px; height: 15px; }
     .icon-only { flex: 0 0 auto !important; padding: 8px !important; }
 
-    .modal { max-width: 560px; padding: 30px; max-height: 92vh; overflow-y: auto; }
+    .modal { max-width: 640px; padding: 30px; max-height: 92vh; overflow-y: auto; overflow-x: hidden; }
     .modal h3 { font-size: 19px; font-weight: 800; margin-bottom: 22px; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
 
     .section-label { font-size: 12.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-primary-bright); margin-bottom: 4px; }
@@ -230,7 +231,7 @@ interface FotoExistente {
     .dropzone small { font-size: 11.5px; }
     .dropzone.uploading { opacity: 0.6; pointer-events: none; }
 
-    .fotos-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+    .fotos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; margin-bottom: 20px; }
     .foto-item { position: relative; aspect-ratio: 1; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--color-border); }
     .foto-item.capa { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-glow); }
     .foto-item img { width: 100%; height: 100%; object-fit: cover; }
@@ -266,7 +267,7 @@ export class VeiculosListComponent implements OnInit {
 
   fotosComErro = new Set<string>();
 
-  constructor(private service: VeiculosService) {}
+  constructor(private service: VeiculosService, private dialog: DialogService) {}
 
   onImgError(veiculoId: string): void {
     this.fotosComErro.add(veiculoId);
@@ -378,20 +379,22 @@ export class VeiculosListComponent implements OnInit {
     }
 
     this.enviandoFoto = true;
-    const lista = [...this.fotosNovas];
+    this.enviarFotosSequencialmente([...this.fotosNovas], veiculoId, 0);
+  }
 
-    const enviarProxima = (index: number) => {
-      if (index >= lista.length) {
-        this.enviandoFoto = false;
-        this.finalizarSalvar();
-        return;
+  private enviarFotosSequencialmente(lista: FotoStaged[], veiculoId: string, index: number): void {
+    if (index >= lista.length) {
+      this.enviandoFoto = false;
+      this.finalizarSalvar();
+      return;
+    }
+    this.service.uploadImagem(veiculoId, lista[index].file).subscribe({
+      next: () => this.enviarFotosSequencialmente(lista, veiculoId, index + 1),
+      error: async () => {
+        await this.dialog.alert(`Não foi possível enviar a imagem "${lista[index].file.name}".`, { tone: 'danger' });
+        this.enviarFotosSequencialmente(lista, veiculoId, index + 1);
       }
-      this.service.uploadImagem(veiculoId, lista[index].file).subscribe({
-        next: () => enviarProxima(index + 1),
-        error: () => enviarProxima(index + 1) // segue enviando as próximas mesmo se uma falhar
-      });
-    };
-    enviarProxima(0);
+    });
   }
 
   private finalizarSalvar(): void {
@@ -401,11 +404,12 @@ export class VeiculosListComponent implements OnInit {
     this.carregar();
   }
 
-  remover(v: Veiculo): void {
-    if (!confirm(`Excluir o veículo ${v.marca} ${v.modelo} (${v.placa})?`)) return;
+  async remover(v: Veiculo): Promise<void> {
+    const ok = await this.dialog.confirm(`Excluir o veículo ${v.marca} ${v.modelo} (${v.placa})? Essa ação não pode ser desfeita.`, { title: 'Excluir veículo' });
+    if (!ok) return;
     this.service.remover(v.id).subscribe({
       next: () => this.carregar(),
-      error: (err) => alert(err.error?.erro ?? 'Não foi possível excluir o veículo.')
+      error: async (err) => this.dialog.alert(err.error?.erro ?? 'Não foi possível excluir o veículo.', { tone: 'danger' })
     });
   }
 

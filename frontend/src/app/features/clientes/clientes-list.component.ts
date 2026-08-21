@@ -6,6 +6,7 @@ import { ClientesService } from './clientes.service';
 import { backdropFade, modalSpring } from '../../core/animations/fluid.animations';
 import { Cliente, ClienteRequest } from '../../core/models/cliente.model';
 import { maskDocumento, maskTelefone } from '../../core/utils/mask.util';
+import { DialogService } from '../../core/services/dialog.service';
 
 const CLIENTE_VAZIO: ClienteRequest = {
   nome: '', documentoTipo: 'CPF', documento: '', email: '', telefone: '', endereco: '', cnh: '', validadeCNH: ''
@@ -173,10 +174,10 @@ const CLIENTE_VAZIO: ClienteRequest = {
     .doc-thumb img { width: 100%; height: 100%; object-fit: cover; }
     .doc-thumb svg { width: 16px; height: 16px; }
 
-    .modal { max-width: 540px; padding: 30px; max-height: 90vh; overflow-y: auto; }
+    .modal { max-width: 600px; padding: 30px; max-height: 90vh; overflow-y: auto; overflow-x: hidden; }
     .modal h3 { font-size: 19px; font-weight: 800; margin-bottom: 6px; }
     .modal .muted { margin-bottom: 20px; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
 
     .doc-modal { max-width: 560px; }
@@ -236,7 +237,7 @@ export class ClientesListComponent implements OnInit {
     return this.clienteSelecionado?.documentoImagemUrl;
   }
 
-  constructor(private service: ClientesService) {}
+  constructor(private service: ClientesService, private dialog: DialogService) {}
 
   ngOnInit(): void {
     this.carregar();
@@ -301,11 +302,12 @@ export class ClientesListComponent implements OnInit {
     });
   }
 
-  remover(c: Cliente): void {
-    if (!confirm(`Excluir o cliente ${c.nome}?`)) return;
+  async remover(c: Cliente): Promise<void> {
+    const ok = await this.dialog.confirm(`Excluir o cliente ${c.nome}? Essa ação não pode ser desfeita.`, { title: 'Excluir cliente' });
+    if (!ok) return;
     this.service.remover(c.id).subscribe({
       next: () => this.carregar(),
-      error: (err) => alert(err.error?.erro ?? 'Não foi possível excluir o cliente.')
+      error: async (err) => this.dialog.alert(err.error?.erro ?? 'Não foi possível excluir o cliente.', { tone: 'danger' })
     });
   }
 
@@ -334,7 +336,7 @@ export class ClientesListComponent implements OnInit {
       },
       error: (err) => {
         this.enviandoDocumento = false;
-        alert(err.error?.erro ?? 'Não foi possível enviar o documento.');
+        this.dialog.alert(err.error?.erro ?? 'Não foi possível enviar o documento.', { tone: 'danger' });
       }
     });
   }

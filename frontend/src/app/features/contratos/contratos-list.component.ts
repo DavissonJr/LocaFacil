@@ -5,6 +5,7 @@ import { ContratosService } from './contratos.service';
 import { VeiculosService } from '../veiculos/veiculos.service';
 import { ClientesService } from '../clientes/clientes.service';
 import { backdropFade, modalSpring } from '../../core/animations/fluid.animations';
+import { DialogService } from '../../core/services/dialog.service';
 import { Contrato, ContratoRequest } from '../../core/models/contrato.model';
 import { Veiculo } from '../../core/models/veiculo.model';
 import { Cliente } from '../../core/models/cliente.model';
@@ -132,11 +133,11 @@ import { Cliente } from '../../core/models/cliente.model';
     .icon-only { padding: 8px; }
     .icon-only svg { width: 14px; height: 14px; }
 
-    .modal { max-width: 540px; padding: 30px; max-height: 90vh; overflow-y: auto; }
+    .modal { max-width: 600px; padding: 30px; max-height: 90vh; overflow-y: auto; overflow-x: hidden; }
     .modal.small { max-width: 400px; }
     .modal h3 { font-size: 19px; font-weight: 800; margin-bottom: 8px; }
     .modal .muted { margin-bottom: 20px; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
   `],
   animations: [backdropFade, modalSpring]
@@ -161,7 +162,8 @@ export class ContratosListComponent implements OnInit {
   constructor(
     private service: ContratosService,
     private veiculosService: VeiculosService,
-    private clientesService: ClientesService
+    private clientesService: ClientesService,
+    private dialog: DialogService
   ) {}
 
   ngOnInit(): void {
@@ -233,9 +235,13 @@ export class ContratosListComponent implements OnInit {
     });
   }
 
-  cancelar(c: Contrato): void {
-    if (!confirm('Cancelar esta locação?')) return;
-    this.service.cancelar(c.id).subscribe(() => this.carregar());
+  async cancelar(c: Contrato): Promise<void> {
+    const ok = await this.dialog.confirm(`Cancelar a locação de ${c.veiculoDescricao} com ${c.clienteNome}?`, { title: 'Cancelar locação' });
+    if (!ok) return;
+    this.service.cancelar(c.id).subscribe({
+      next: () => this.carregar(),
+      error: async (err) => this.dialog.alert(err.error?.erro ?? 'Não foi possível cancelar a locação.', { tone: 'danger' })
+    });
   }
 
   fecharModais(): void {
