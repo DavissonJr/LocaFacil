@@ -35,6 +35,10 @@ export class VeiculosService {
   uploadImagem(id: string, arquivo: File): Observable<Veiculo> {
     const formData = new FormData();
     formData.append('arquivo', arquivo);
-    return this.http.post<Veiculo>(`${this.url}/${id}/imagem`, formData);
+    return this.http.post<Veiculo>(`${this.url}/${id}/fotos`, formData);
+  }
+
+  removerFoto(id: string, fotoId: string): Observable<void> {
+    return this.http.delete<void>(`${this.url}/${id}/fotos/${fotoId}`);
   }
 }

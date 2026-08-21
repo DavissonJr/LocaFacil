@@ -13,6 +13,8 @@ public record VeiculoRequest(
     string Status
 );
 
+public record VeiculoFotoResponse(Guid Id, string Url);
+
 public record VeiculoResponse(
     Guid Id,
     string Placa,
@@ -25,5 +27,5 @@ public record VeiculoResponse(
     decimal ValorDiaria,
     int KmAtual,
     string Status,
-    string? ImagemUrl
+    IReadOnlyList<VeiculoFotoResponse> Fotos
 );

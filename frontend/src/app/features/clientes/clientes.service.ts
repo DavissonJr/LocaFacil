@@ -31,4 +31,10 @@ export class ClientesService {
   remover(id: string): Observable<void> {
     return this.http.delete<void>(`${this.url}/${id}`);
   }
+
+  enviarDocumento(id: string, arquivo: File): Observable<Cliente> {
+    const formData = new FormData();
+    formData.append('arquivo', arquivo);
+    return this.http.post<Cliente>(`${this.url}/${id}/documento`, formData);
+  }
 }

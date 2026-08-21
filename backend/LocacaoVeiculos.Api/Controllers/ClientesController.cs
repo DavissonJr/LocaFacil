@@ -2,6 +2,7 @@ using System.Security.Claims;
 using LocacaoVeiculos.Api.Data;
 using LocacaoVeiculos.Api.DTOs;
 using LocacaoVeiculos.Api.Models;
+using LocacaoVeiculos.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,12 +15,20 @@ namespace LocacaoVeiculos.Api.Controllers;
 public class ClientesController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public ClientesController(AppDbContext db) => _db = db;
+    private readonly IMinioService _minio;
+    private static readonly string[] TiposImagemPermitidos = { "image/jpeg", "image/png", "image/webp" };
+
+    public ClientesController(AppDbContext db, IMinioService minio)
+    {
+        _db = db;
+        _minio = minio;
+    }
 
     private Guid EmpresaId => Guid.Parse(User.FindFirstValue("empresaId")!);
 
     private static ClienteResponse ToResponse(Cliente c) => new(
-        c.Id, c.Nome, c.DocumentoTipo, c.Documento, c.Email, c.Telefone, c.Endereco, c.CNH, c.ValidadeCNH, c.Ativo);
+        c.Id, c.Nome, c.DocumentoTipo, c.Documento, c.Email, c.Telefone, c.Endereco, c.CNH, c.ValidadeCNH,
+        c.DocumentoImagemUrl, c.Ativo);
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ClienteResponse>>> Listar([FromQuery] string? busca)
@@ -89,5 +98,36 @@ public class ClientesController : ControllerBase
         cliente.Ativo = false; // soft delete: preserva histórico de contratos
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    // Envia (ou substitui) a foto do documento do cliente (RG, CNH, etc)
+    [HttpPost("{id:guid}/documento")]
+    [RequestSizeLimit(10_000_000)]
+    public async Task<ActionResult<ClienteResponse>> EnviarDocumento(Guid id, IFormFile arquivo)
+    {
+        var cliente = await _db.Clientes.FirstOrDefaultAsync(c => c.Id == id);
+        if (cliente is null) return NotFound();
+
+        if (arquivo is null || arquivo.Length == 0)
+            return BadRequest("Nenhum arquivo enviado.");
+
+        if (!TiposImagemPermitidos.Contains(arquivo.ContentType))
+            return BadRequest("Formato de imagem não suportado. Use JPEG, PNG ou WEBP.");
+
+        var objectNameAntigo = cliente.DocumentoImagemObjectName;
+
+        await using var stream = arquivo.OpenReadStream();
+        var objectName = await _minio.UploadArquivoAsync(stream, arquivo.FileName, arquivo.ContentType);
+
+        cliente.DocumentoImagemUrl = _minio.ObterUrlPublica(objectName);
+        cliente.DocumentoImagemObjectName = objectName;
+        await _db.SaveChangesAsync();
+
+        if (!string.IsNullOrEmpty(objectNameAntigo))
+        {
+            try { await _minio.RemoverArquivoAsync(objectNameAntigo); } catch { /* não trava a operação */ }
+        }
+
+        return Ok(ToResponse(cliente));
     }
 }

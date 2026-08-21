@@ -53,63 +53,78 @@ import { RegisterEmpresaRequest } from '../../../core/models/auth.model';
       </div>
 
       <div class="hero">
+        <div class="grid-overlay"></div>
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+
         <div class="hero-content">
           <div class="hero-icon">
             <svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m8-8H4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           </div>
-          <h1>Comece em minutos</h1>
+          <h1>Comece em <span>minutos</span></h1>
           <p>Sem cartão de crédito, sem burocracia. Crie sua conta e já cadastre seu primeiro veículo.</p>
           <ul class="hero-list">
             <li><span class="dot"></span> Cadastro rápido e gratuito</li>
             <li><span class="dot"></span> Seus dados totalmente isolados</li>
-            <li><span class="dot"></span> Suporte a upload de fotos dos veículos</li>
+            <li><span class="dot"></span> Upload de fotos de veículos e documentos</li>
           </ul>
         </div>
       </div>
     </div>
   `,
   styles: [`
-    .auth-page { min-height: 100vh; display: flex; }
+    .auth-page { min-height: 100vh; display: flex; background: var(--color-bg); }
 
     .hero {
       flex: 1;
-      background: linear-gradient(160deg, #4f46e5 0%, #6d28d9 55%, #4338ca 100%);
+      background: linear-gradient(160deg, #1a0508 0%, #3d0a12 45%, #1a0508 100%);
       display: flex; align-items: center; justify-content: center;
       padding: 48px; position: relative; overflow: hidden;
     }
-    .hero::before, .hero::after { content: ''; position: absolute; border-radius: 50%; background: rgba(255,255,255,0.08); }
-    .hero::before { width: 420px; height: 420px; top: -140px; right: -140px; }
-    .hero::after { width: 300px; height: 300px; bottom: -100px; left: -80px; }
+    .grid-overlay {
+      position: absolute; inset: 0;
+      background-image: linear-gradient(rgba(255,77,94,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,77,94,0.08) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 30%, transparent 100%);
+    }
+    .orb { position: absolute; border-radius: 50%; filter: blur(50px); }
+    .orb-1 { width: 340px; height: 340px; top: -100px; left: -80px; background: radial-gradient(circle, rgba(239,35,60,0.5), transparent 70%); animation: floatOrb 7s ease-in-out infinite; }
+    .orb-2 { width: 260px; height: 260px; bottom: -80px; right: -60px; background: radial-gradient(circle, rgba(255,77,94,0.35), transparent 70%); animation: floatOrb 9s ease-in-out infinite reverse; }
+    @keyframes floatOrb { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-20px, -20px) scale(1.1); } }
+
     .hero-content { position: relative; z-index: 1; max-width: 380px; color: white; }
     .hero-icon {
-      width: 52px; height: 52px; border-radius: 14px;
-      background: rgba(255,255,255,0.15); backdrop-filter: blur(4px);
-      display: flex; align-items: center; justify-content: center; margin-bottom: 24px;
+      width: 54px; height: 54px; border-radius: 15px;
+      background: rgba(239,35,60,0.15); border: 1px solid rgba(255,77,94,0.3);
+      backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center; margin-bottom: 26px;
+      box-shadow: 0 0 30px rgba(239,35,60,0.25);
     }
-    .hero-icon svg { width: 26px; height: 26px; }
-    .hero h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 14px; }
-    .hero p { font-size: 15px; line-height: 1.6; opacity: 0.88; margin-bottom: 28px; }
-    .hero-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 14px; }
-    .hero-list li { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 500; opacity: 0.95; }
-    .dot { width: 6px; height: 6px; border-radius: 50%; background: white; flex-shrink: 0; }
+    .hero-icon svg { width: 27px; height: 27px; color: #ff8a94; }
+    .hero h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 16px; }
+    .hero h1 span { color: #ff4d5e; text-shadow: 0 0 24px rgba(255,77,94,0.6); }
+    .hero p { font-size: 15px; line-height: 1.65; opacity: 0.75; margin-bottom: 30px; }
+    .hero-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 15px; }
+    .hero-list li { display: flex; align-items: center; gap: 11px; font-size: 14px; font-weight: 500; opacity: 0.9; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: #ff4d5e; box-shadow: 0 0 8px #ff4d5e; flex-shrink: 0; }
 
-    .form-side { flex: 1.15; display: flex; align-items: center; justify-content: center; padding: 40px 24px; background: var(--color-bg); overflow-y: auto; }
+    .form-side { flex: 1.15; display: flex; align-items: center; justify-content: center; padding: 40px 24px; overflow-y: auto; }
     .auth-card { width: 100%; max-width: 460px; }
     .back-link {
       display: inline-flex; align-items: center; gap: 6px;
       font-size: 13px; font-weight: 600; color: var(--color-text-muted);
-      text-decoration: none; margin-bottom: 20px;
+      text-decoration: none; margin-bottom: 22px; transition: color 0.15s;
     }
     .back-link:hover { color: var(--color-text); }
-    h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
-    .subtitle { color: var(--color-text-muted); font-size: 14px; margin: 6px 0 24px; }
+    h2 { font-size: 25px; font-weight: 800; letter-spacing: -0.02em; }
+    .subtitle { color: var(--color-text-muted); font-size: 14px; margin: 6px 0 26px; }
     .section-label {
-      font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
-      color: var(--color-primary); margin: 22px 0 14px;
+      font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--color-primary-bright); margin: 24px 0 14px;
     }
     .section-label:first-of-type { margin-top: 4px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .full { width: 100%; justify-content: center; margin-top: 10px; padding: 12px; }
+    .full { width: 100%; justify-content: center; margin-top: 10px; padding: 13px; font-size: 15px; }
 
     @media (max-width: 860px) { .hero { display: none; } }
   `]

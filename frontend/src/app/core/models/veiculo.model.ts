@@ -1,3 +1,8 @@
+export interface VeiculoFoto {
+  id: string;
+  url: string;
+}
+
 export interface Veiculo {
   id: string;
   placa: string;
@@ -10,7 +15,7 @@ export interface Veiculo {
   valorDiaria: number;
   kmAtual: number;
   status: 'Disponivel' | 'Locado' | 'Manutencao' | 'Inativo';
-  imagemUrl?: string;
+  fotos: VeiculoFoto[];
 }
 
-export type VeiculoRequest = Omit<Veiculo, 'id' | 'imagemUrl'>;
+export type VeiculoRequest = Omit<Veiculo, 'id' | 'fotos'>;

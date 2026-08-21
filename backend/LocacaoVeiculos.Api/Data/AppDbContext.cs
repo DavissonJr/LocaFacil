@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<Empresa> Empresas => Set<Empresa>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<Veiculo> Veiculos => Set<Veiculo>();
+    public DbSet<VeiculoFoto> VeiculoFotos => Set<VeiculoFoto>();
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<Contrato> Contratos => Set<Contrato>();
 
@@ -43,6 +44,12 @@ public class AppDbContext : DbContext
             e.HasQueryFilter(x => _tenantProvider.EmpresaId == null || x.EmpresaId == _tenantProvider.EmpresaId);
         });
 
+        modelBuilder.Entity<VeiculoFoto>(e =>
+        {
+            e.HasOne(x => x.Veiculo).WithMany(x => x.Fotos).HasForeignKey(x => x.VeiculoId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(x => _tenantProvider.EmpresaId == null || x.EmpresaId == _tenantProvider.EmpresaId);
+        });
+
         modelBuilder.Entity<Cliente>(e =>
         {
             e.HasIndex(x => new { x.EmpresaId, x.Documento }).IsUnique();
@@ -55,7 +62,7 @@ public class AppDbContext : DbContext
             e.HasOne(x => x.Empresa).WithMany(x => x.Contratos).HasForeignKey(x => x.EmpresaId);
             e.HasOne(x => x.Veiculo).WithMany().HasForeignKey(x => x.VeiculoId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.Cliente).WithMany().HasForeignKey(x => x.ClienteId).OnDelete(DeleteBehavior.Restrict);
-            e.HasOne(x => x.Usuario).WithMany().HasForeignKey(x => x.UsuarioId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.Usuario).WithMany().HasForeignKey(x => x.UsuarioId).OnDelete(DeleteBehavior.Restrict);
             e.Property(x => x.ValorDiaria).HasColumnType("decimal(10,2)");
             e.Property(x => x.ValorTotal).HasColumnType("decimal(10,2)");
             e.HasQueryFilter(x => _tenantProvider.EmpresaId == null || x.EmpresaId == _tenantProvider.EmpresaId);

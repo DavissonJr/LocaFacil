@@ -21,5 +21,6 @@ public record ClienteResponse(
     string? Endereco,
     string? CNH,
     DateTime? ValidadeCNH,
+    string? DocumentoImagemUrl,
     bool Ativo
 );

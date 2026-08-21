@@ -16,6 +16,7 @@ public class VeiculosController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly IMinioService _minio;
+    private static readonly string[] TiposImagemPermitidos = { "image/jpeg", "image/png", "image/webp" };
 
     public VeiculosController(AppDbContext db, IMinioService minio)
     {
@@ -27,12 +28,13 @@ public class VeiculosController : ControllerBase
 
     private static VeiculoResponse ToResponse(Veiculo v) => new(
         v.Id, v.Placa, v.Marca, v.Modelo, v.AnoFabricacao, v.AnoModelo,
-        v.Cor, v.Categoria, v.ValorDiaria, v.KmAtual, v.Status, v.ImagemUrl);
+        v.Cor, v.Categoria, v.ValorDiaria, v.KmAtual, v.Status,
+        v.Fotos.OrderBy(f => f.DataCriacao).Select(f => new VeiculoFotoResponse(f.Id, f.Url)).ToList());
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<VeiculoResponse>>> Listar([FromQuery] string? status)
     {
-        var query = _db.Veiculos.AsQueryable(); // já filtrado por tenant via global query filter
+        var query = _db.Veiculos.Include(v => v.Fotos).AsQueryable();
         if (!string.IsNullOrWhiteSpace(status))
             query = query.Where(v => v.Status == status);
 
@@ -43,7 +45,7 @@ public class VeiculosController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<VeiculoResponse>> ObterPorId(Guid id)
     {
-        var veiculo = await _db.Veiculos.FirstOrDefaultAsync(v => v.Id == id);
+        var veiculo = await _db.Veiculos.Include(v => v.Fotos).FirstOrDefaultAsync(v => v.Id == id);
         if (veiculo is null) return NotFound();
         return Ok(ToResponse(veiculo));
     }
@@ -95,35 +97,60 @@ public class VeiculosController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Remover(Guid id)
     {
-        var veiculo = await _db.Veiculos.FirstOrDefaultAsync(v => v.Id == id);
+        var veiculo = await _db.Veiculos.Include(v => v.Fotos).FirstOrDefaultAsync(v => v.Id == id);
         if (veiculo is null) return NotFound();
+
+        foreach (var foto in veiculo.Fotos)
+        {
+            try { await _minio.RemoverArquivoAsync(foto.ObjectName); } catch { /* melhor não travar a exclusão por causa disso */ }
+        }
 
         _db.Veiculos.Remove(veiculo);
         await _db.SaveChangesAsync();
         return NoContent();
     }
 
-    // Upload da foto do veículo -> armazenada no MinIO
-    [HttpPost("{id:guid}/imagem")]
+    // Adiciona UMA foto por chamada (o frontend chama isso uma vez pra cada arquivo selecionado)
+    [HttpPost("{id:guid}/fotos")]
     [RequestSizeLimit(10_000_000)]
-    public async Task<ActionResult<VeiculoResponse>> UploadImagem(Guid id, IFormFile arquivo)
+    public async Task<ActionResult<VeiculoResponse>> AdicionarFoto(Guid id, IFormFile arquivo)
     {
-        var veiculo = await _db.Veiculos.FirstOrDefaultAsync(v => v.Id == id);
+        var veiculo = await _db.Veiculos.Include(v => v.Fotos).FirstOrDefaultAsync(v => v.Id == id);
         if (veiculo is null) return NotFound();
 
         if (arquivo is null || arquivo.Length == 0)
             return BadRequest("Nenhum arquivo enviado.");
 
-        var tiposPermitidos = new[] { "image/jpeg", "image/png", "image/webp" };
-        if (!tiposPermitidos.Contains(arquivo.ContentType))
+        if (!TiposImagemPermitidos.Contains(arquivo.ContentType))
             return BadRequest("Formato de imagem não suportado. Use JPEG, PNG ou WEBP.");
 
         await using var stream = arquivo.OpenReadStream();
         var objectName = await _minio.UploadArquivoAsync(stream, arquivo.FileName, arquivo.ContentType);
 
-        veiculo.ImagemUrl = _minio.ObterUrlPublica(objectName);
+        var foto = new VeiculoFoto
+        {
+            EmpresaId = EmpresaId,
+            VeiculoId = veiculo.Id,
+            Url = _minio.ObterUrlPublica(objectName),
+            ObjectName = objectName
+        };
+        _db.VeiculoFotos.Add(foto);
         await _db.SaveChangesAsync();
 
+        veiculo.Fotos.Add(foto);
         return Ok(ToResponse(veiculo));
+    }
+
+    [HttpDelete("{id:guid}/fotos/{fotoId:guid}")]
+    public async Task<IActionResult> RemoverFoto(Guid id, Guid fotoId)
+    {
+        var foto = await _db.VeiculoFotos.FirstOrDefaultAsync(f => f.Id == fotoId && f.VeiculoId == id);
+        if (foto is null) return NotFound();
+
+        try { await _minio.RemoverArquivoAsync(foto.ObjectName); } catch { /* segue o jogo mesmo se falhar */ }
+
+        _db.VeiculoFotos.Remove(foto);
+        await _db.SaveChangesAsync();
+        return NoContent();
     }
 }

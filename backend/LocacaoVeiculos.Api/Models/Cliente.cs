@@ -14,6 +14,8 @@ public class Cliente
     public string? Endereco { get; set; }
     public string? CNH { get; set; }
     public DateTime? ValidadeCNH { get; set; }
+    public string? DocumentoImagemUrl { get; set; }
+    public string? DocumentoImagemObjectName { get; set; }
     public bool Ativo { get; set; } = true;
     public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
 }

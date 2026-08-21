@@ -8,7 +8,8 @@ export interface Cliente {
   endereco?: string;
   cnh?: string;
   validadeCNH?: string;
+  documentoImagemUrl?: string;
   ativo: boolean;
 }
 
-export type ClienteRequest = Omit<Cliente, 'id' | 'ativo'>;
+export type ClienteRequest = Omit<Cliente, 'id' | 'ativo' | 'documentoImagemUrl'>;
